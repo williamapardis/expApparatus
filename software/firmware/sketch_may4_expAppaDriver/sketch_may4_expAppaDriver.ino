@@ -81,6 +81,22 @@ void parseCmd(){
       Serial.println(command);
       stock_pmp.send_cmd(command.c_str());
     }  
+	} else if(command == "empty_pmp"){
+  Serial.print("What is your empty pump command? ");
+    if(readWithTimeout(10000)){
+      command = Serial.readStringUntil('\n');
+      command.trim();  // Remove any whitespace
+      Serial.println(command);
+      empty_pmp.send_cmd(command.c_str());
+    }  
+	} else if(command == "fresh_pmp"){
+  Serial.print("What is your fresh pump command? ");
+    if(readWithTimeout(10000)){
+      command = Serial.readStringUntil('\n');
+      command.trim();  // Remove any whitespace
+      Serial.println(command);
+      fresh_pmp.send_cmd(command.c_str());
+    }  
 
   } else if(command == "SKIP"){
     dt[step]=0;
@@ -184,7 +200,7 @@ void loop() {
   }
 
   //averaging
-  if(now-interval>10000){
+  if(now-interval>60000){
     Serial.print(rtc.getTime());Serial.print(',');
     Serial.print(dt[step]);Serial.print(',');
 		Serial.print(now-then);Serial.print(',');
