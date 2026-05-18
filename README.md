@@ -1,4 +1,5 @@
 # expApparatus
 
 ### Dependancy
-TaskManagerIO.h
+[TaskManagerIO arduino library
+](https://www.thecoderscorner.com/products/arduino-libraries/taskmanager-io/)
