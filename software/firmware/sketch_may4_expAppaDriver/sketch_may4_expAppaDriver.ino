@@ -13,17 +13,28 @@ ESP32Time rtc;
 #define SECONDARY_I2C_PORT Wire1
 
 // device addresses
-#define stock_pmp_addr 101
+#define stock_pmp_addr 103
+#define fresh_pmp_addr 99
+#define empty_pmp_addr 101
 
 // device objects
 Ezo_board stock_pmp = Ezo_board(stock_pmp_addr, "stock");                   //create a pump circuit object, whose address is 103 and name is "PMP_UP". This pump dispenses pH up solution.
+Ezo_board fresh_pmp = Ezo_board(fresh_pmp_addr, "fresh"); 
+Ezo_board empty_pmp = Ezo_board(empty_pmp_addr, "empty"); 
 
-
-//Pumps
-int dt[] = {900000, 900000, 900000, 900000, 900000, 900000, 900000};
-double dv[] = {28, 31, 35, 84, 53, 61};
+//Pumps {thermal equilibration, dose 1, dose 2, dose n... empty, DI}
+// int dt[] = {10000, 10000, 10000, 10000, 20000, 10000};
+// double dv[] = {1, 1, 1, 10, 5};
+int dt[] = {3600000, 2700000, 2700000, 2700000, 600000, 300000};
+double dv[] = {71, 94, 132, 726, 429};
 int now, then, step, interval, offset, fresh=0, empty=0, stock=0;
-int totalSteps = sizeof(dt) / sizeof(dt[0]);
+int totalSteps = sizeof(dv) / sizeof(dv[0]);
+int titrationSteps = totalSteps-2;
+
+//Temperature Setpoints
+int Tset[] = {15, 25, 35};
+int tempSteps = sizeof(Tset) / sizeof(Tset[0]);
+int Tj=0;
 
 //ADC
 int bits;
@@ -75,7 +86,12 @@ void parseCmd(){
     dt[step]=0;
   } else if(command == "OFF"){
     stock_pmp.send_cmd("X");
-    step=totalSteps;
+		fresh_pmp.send_cmd("X");
+		empty_pmp.send_cmd("X");
+    step=totalSteps+1;
+	} else if(command == "RESET"){
+		step = 0;
+		Tj = 0;
   } else{
     Serial.println("I do not understand you, type help for help.");
   }
@@ -87,11 +103,19 @@ void setup() {
   //Wire.setPins(SDA1, SCL1);
   Wire.begin();                             //start the I2C
   Serial.begin(115200);                     //start the serial communication to the computer
+	Serial1.begin(9600);
 
   step = 0;
   then = millis();
   interval=millis();
 
+	//changing temperature setpoint
+	Serial1.print("RS0"+String(Tset[Tj])+"0C\r");
+	//printing action
+	Serial.print(rtc.getTime());Serial.print(',');
+	Serial.println("temperature set " + String(Tj) + " set to " + String(Tset[Tj]));
+	//indexing
+	Tj++;
 }
 
 
@@ -100,26 +124,75 @@ void loop() {
 
   int now = millis();
   //bool ready = GSheet.ready();
+	if(step<titrationSteps){
+		if(now-then>dt[step]){
 
-  if(now-then>dt[step] && step<totalSteps){
-    Serial.println("dosing step " + String(step) + " dispensing " + String(dv[step]));
-    stock_pmp.send_cmd_with_num("d,-", dv[step]);
-    stock+=dv[step];
-    step++;
-    then = millis();
-  } 
+			//dosing
+			stock_pmp.send_cmd_with_num("d,-", dv[step]);
+			stock+=dv[step];
+			
+			//printing action
+			Serial.print(rtc.getTime());Serial.print(',');
+			Serial.println("stock step " + String(step) + " dispensing " + String(dv[step]));
 
+			//indexing
+			step++;
+			then = millis();
+			
+		} 
+	} else if(now-then>dt[step] && step == totalSteps-2){
+		//set new temperature setpoint so we can begin equilibrating
+		Serial1.print("RS0"+String(Tset[Tj])+"0C\r");
+		
+		//printing action
+		Serial.print(rtc.getTime());Serial.print(',');
+		Serial.println("temperature set " + String(Tj) + " set to " + String(Tset[Tj]));
+		Tj++;
+
+		//remove excess solution so I can prepare for dillution
+		empty_pmp.send_cmd_with_num("d,-", dv[step]);
+		empty+=dv[step];
+
+		//printing action
+		Serial.print(rtc.getTime());Serial.print(',');
+		Serial.println("empty step " + String(step) + " dispensing " + String(dv[step]));
+
+		//indexing
+		step++;
+		then = millis();
+
+	} else if(now-then>dt[step] && step == totalSteps-1){
+		//dillute
+		fresh_pmp.send_cmd_with_num("d,-", dv[step]);
+		fresh+=dv[step];
+
+		//printing action
+		Serial.print(rtc.getTime());Serial.print(',');
+		Serial.println("fresh step " + String(step) + " dispensing " + String(dv[step]));
+
+		//indexing
+		step++;
+		then = millis();
+
+	} else if(now-then>dt[step] && step == totalSteps && Tj<tempSteps){
+		step=0;
+		then = millis();
+	}
 
   if (Serial.available() > 0) {
     parseCmd();
   }
 
   //averaging
-  if(now-interval>1000){
+  if(now-interval>10000){
     Serial.print(rtc.getTime());Serial.print(',');
-    Serial.print(interval);Serial.print(',');
+    Serial.print(dt[step]);Serial.print(',');
+		Serial.print(now-then);Serial.print(',');
     Serial.print(step);Serial.print(',');
-    Serial.println(stock);
+		Serial.print(stock);Serial.print(',');
+		Serial.print(fresh);Serial.print(',');
+		Serial.print(empty);Serial.print(',');
+		Serial.println(Tset[Tj-1]);
 
     interval=millis();
   }
