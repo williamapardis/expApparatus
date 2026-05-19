@@ -23,10 +23,10 @@ Ezo_board fresh_pmp = Ezo_board(fresh_pmp_addr, "fresh");
 Ezo_board empty_pmp = Ezo_board(empty_pmp_addr, "empty"); 
 
 //Pumps {thermal equilibration, dose 1, dose 2, dose n... empty, DI}
-int dt[] = {10000, 10000, 10000, 10000, 20000, 10000};
-double dv[] = {1, 1, 1, 10, 5};
-// int dt[] = {3600000, 2700000, 2700000, 2700000, 600000, 300000};
-// double dv[] = {71, 94, 132, 726, 429};
+// int dt[] = {10000, 10000, 10000, 10000, 20000, 10000};
+// double dv[] = {1, 1, 1, 10, 5};
+int dt[] = {3600000, 2700000, 2700000, 2700000, 600000, 300000};
+double dv[] = {71, 94, 132, 726, 429};
 int now, then, step, interval, offset, fresh=0, empty=0, stock=0;
 int totalSteps = sizeof(dv) / sizeof(dv[0]);
 int titrationSteps = totalSteps-2;
@@ -68,6 +68,8 @@ bool readWithTimeout(int timeout_ms) {
 void printStatus(){
   Serial.print(rtc.getTime());Serial.print(',');
   Serial.print(dt[step]);Serial.print(',');
+  Serial.print(now);Serial.print(',');
+  Serial.print(then);Serial.print(',');
   Serial.print(now-then);Serial.print(',');
   Serial.print(step);Serial.print(',');
   Serial.print(stock);Serial.print(',');
@@ -75,7 +77,6 @@ void printStatus(){
   Serial.print(empty);Serial.print(',');
   Serial.print(Tj);Serial.print(',');
   Serial.println(Tset[Tj-1]);
-  
 }
 
 
@@ -156,7 +157,7 @@ void setup() {
 
 void loop() {
 
-  int now = millis();
+  now = millis();
   //bool ready = GSheet.ready();
 	if(step<titrationSteps){
 		if(now-then>dt[step]){
