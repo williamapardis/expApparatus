@@ -42,6 +42,7 @@ float E,Vo;
 //avg
 int i=0;
 
+
 // Example of a while loop with timeout
 bool readWithTimeout(int timeout_ms) {
   unsigned long startTime = millis();
@@ -62,6 +63,19 @@ bool readWithTimeout(int timeout_ms) {
   Serial.println("timeout");
   return false;  // Timeout occurred
 }
+
+
+void printStatus(){
+  Serial.print(rtc.getTime());Serial.print(',');
+  Serial.print(dt[step]);Serial.print(',');
+  Serial.print(now-then);Serial.print(',');
+  Serial.print(step);Serial.print(',');
+  Serial.print(stock);Serial.print(',');
+  Serial.print(fresh);Serial.print(',');
+  Serial.print(empty);Serial.print(',');
+  Serial.println(Tset[Tj-1]);
+}
+
 
 void parseCmd(){
   String command = Serial.readStringUntil('\n');  // Read until newline character
@@ -97,7 +111,8 @@ void parseCmd(){
       Serial.println(command);
       fresh_pmp.send_cmd(command.c_str());
     }  
-
+  } else if(command == "STATUS"){
+    printStatus();
   } else if(command == "SKIP"){
     dt[step]=0;
   } else if(command == "OFF"){
@@ -113,8 +128,8 @@ void parseCmd(){
   }
 }
 
-void setup() {
 
+void setup() {
   //Wire = Wire1;                           //if your using qt py
   //Wire.setPins(SDA1, SCL1);
   Wire.begin();                             //start the I2C
@@ -135,7 +150,6 @@ void setup() {
 	//indexing
 	Tj++;
 }
-
 
 
 void loop() {
@@ -204,15 +218,7 @@ void loop() {
 
   //averaging
   if(now-interval>60000){
-    Serial.print(rtc.getTime());Serial.print(',');
-    Serial.print(dt[step]);Serial.print(',');
-		Serial.print(now-then);Serial.print(',');
-    Serial.print(step);Serial.print(',');
-		Serial.print(stock);Serial.print(',');
-		Serial.print(fresh);Serial.print(',');
-		Serial.print(empty);Serial.print(',');
-		Serial.println(Tset[Tj-1]);
-
+    printStatus();    
     interval=millis();
   }
 
