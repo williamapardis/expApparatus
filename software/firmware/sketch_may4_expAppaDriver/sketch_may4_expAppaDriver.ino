@@ -23,10 +23,10 @@ Ezo_board fresh_pmp = Ezo_board(fresh_pmp_addr, "fresh");
 Ezo_board empty_pmp = Ezo_board(empty_pmp_addr, "empty"); 
 
 //Pumps {thermal equilibration, dose 1, dose 2, dose n... empty, DI}
-// int dt[] = {10000, 10000, 10000, 10000, 20000, 10000};
-// double dv[] = {1, 1, 1, 10, 5};
-int dt[] = {3600000, 2700000, 2700000, 2700000, 600000, 300000};
-double dv[] = {71, 94, 132, 726, 429};
+int dt[] = {10000, 10000, 10000, 10000, 20000, 10000};
+double dv[] = {1, 1, 1, 10, 5};
+// int dt[] = {3600000, 2700000, 2700000, 2700000, 600000, 300000};
+// double dv[] = {71, 94, 132, 726, 429};
 int now, then, step, interval, offset, fresh=0, empty=0, stock=0;
 int totalSteps = sizeof(dv) / sizeof(dv[0]);
 int titrationSteps = totalSteps-2;
@@ -73,7 +73,9 @@ void printStatus(){
   Serial.print(stock);Serial.print(',');
   Serial.print(fresh);Serial.print(',');
   Serial.print(empty);Serial.print(',');
+  Serial.print(Tj);Serial.print(',');
   Serial.println(Tset[Tj-1]);
+  
 }
 
 
@@ -207,7 +209,7 @@ void loop() {
 		step++;
 		then = millis();
 
-	} else if(now-then>dt[step] && step == totalSteps && Tj<tempSteps){
+	} else if(now-then>dt[step] && step == totalSteps && Tj<=tempSteps){
 		step=0;
 		then = millis();
 	}
