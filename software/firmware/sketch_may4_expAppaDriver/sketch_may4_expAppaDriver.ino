@@ -127,6 +127,8 @@ void setup() {
 
 	//changing temperature setpoint
 	Serial1.print("RS0"+String(Tset[Tj])+"0C\r");
+  Serial1.print("RA1\r");
+
 	//printing action
 	Serial.print(rtc.getTime());Serial.print(',');
 	Serial.println("temperature set " + String(Tj) + " set to " + String(Tset[Tj]));
@@ -144,7 +146,7 @@ void loop() {
 		if(now-then>dt[step]){
 
 			//dosing
-			stock_pmp.send_cmd_with_num("d,-", dv[step]);
+			stock_pmp.send_cmd_with_num("d,", dv[step]);
 			stock+=dv[step];
 			
 			//printing action
@@ -159,6 +161,7 @@ void loop() {
 	} else if(now-then>dt[step] && step == totalSteps-2){
 		//set new temperature setpoint so we can begin equilibrating
 		Serial1.print("RS0"+String(Tset[Tj])+"0C\r");
+    Serial1.print("RA1\r");
 		
 		//printing action
 		Serial.print(rtc.getTime());Serial.print(',');
@@ -166,7 +169,7 @@ void loop() {
 		Tj++;
 
 		//remove excess solution so I can prepare for dillution
-		empty_pmp.send_cmd_with_num("d,-", dv[step]);
+		empty_pmp.send_cmd_with_num("d,", dv[step]);
 		empty+=dv[step];
 
 		//printing action
@@ -179,7 +182,7 @@ void loop() {
 
 	} else if(now-then>dt[step] && step == totalSteps-1){
 		//dillute
-		fresh_pmp.send_cmd_with_num("d,-", dv[step]);
+		fresh_pmp.send_cmd_with_num("d,", dv[step]);
 		fresh+=dv[step];
 
 		//printing action
